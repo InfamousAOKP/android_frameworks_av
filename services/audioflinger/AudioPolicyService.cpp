@@ -504,7 +504,6 @@ bool AudioPolicyService::isStreamActiveRemotely(audio_stream_type_t stream, uint
 
 bool AudioPolicyService::isSourceActive(audio_source_t source) const
 {
-#ifndef ICS_AUDIO_BLOB
     if (mpAudioPolicy == NULL) {
         return false;
     }
@@ -513,9 +512,6 @@ bool AudioPolicyService::isSourceActive(audio_source_t source) const
     }
     Mutex::Autolock _l(mLock);
     return mpAudioPolicy->is_source_active(mpAudioPolicy, source);
-#else
-    return false;
-#endif
 }
 
 status_t AudioPolicyService::queryDefaultPreProcessing(int audioSession,
