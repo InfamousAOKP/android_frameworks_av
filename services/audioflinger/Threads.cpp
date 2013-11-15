@@ -1617,6 +1617,7 @@ void AudioFlinger::PlaybackThread::readOutputParameters()
                 mFrameCount);
     }
 
+#ifndef ICS_AUDIO_BLOB
     if ((mOutput->flags & AUDIO_OUTPUT_FLAG_NON_BLOCKING) &&
             (mOutput->stream->set_callback != NULL)) {
         if (mOutput->stream->set_callback(mOutput->stream,
@@ -1625,6 +1626,7 @@ void AudioFlinger::PlaybackThread::readOutputParameters()
             mCallbackThread = new AudioFlinger::AsyncCallbackThread(this);
         }
     }
+#endif
 
     // Calculate size of normal mix buffer relative to the HAL output buffer size
     double multiplier = 1.0;
@@ -1911,6 +1913,7 @@ ssize_t AudioFlinger::PlaybackThread::threadLoop_write()
 
 void AudioFlinger::PlaybackThread::threadLoop_drain()
 {
+#ifndef ICS_AUDIO_BLOB
     if (mOutput->stream->drain) {
         ALOGV("draining %s", (mMixerStatus == MIXER_DRAIN_TRACK) ? "early" : "full");
         if (mUseAsyncWrite) {
@@ -1923,6 +1926,7 @@ void AudioFlinger::PlaybackThread::threadLoop_drain()
             (mMixerStatus == MIXER_DRAIN_TRACK) ? AUDIO_DRAIN_EARLY_NOTIFY
                                                 : AUDIO_DRAIN_ALL);
     }
+#endif
 }
 
 void AudioFlinger::PlaybackThread::threadLoop_exit()
@@ -2381,6 +2385,7 @@ void AudioFlinger::PlaybackThread::removeTracks_l(const Vector< sp<Track> >& tra
 
 status_t AudioFlinger::PlaybackThread::getTimestamp_l(AudioTimestamp& timestamp)
 {
+#ifndef ICS_AUDIO_BLOB
     if (mNormalSink != 0) {
         return mNormalSink->getTimestamp(timestamp);
     }
@@ -2394,6 +2399,9 @@ status_t AudioFlinger::PlaybackThread::getTimestamp_l(AudioTimestamp& timestamp)
         }
     }
     return INVALID_OPERATION;
+#else
+    return INVALID_OPERATION;
+#endif
 }
 // ----------------------------------------------------------------------------
 
@@ -4012,12 +4020,14 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::OffloadThread::prepareTr
                         standbyTime = systemTime() + standbyDelay;
                         mixerStatus = MIXER_DRAIN_TRACK;
                         mDrainSequence += 2;
+#ifndef ICS_AUDIO_BLOB
                         if (mHwPaused) {
                             // It is possible to move from PAUSED to STOPPING_1 without
                             // a resume so we must ensure hardware is running
                             mOutput->stream->resume(mOutput->stream);
                             mHwPaused = false;
                         }
+#endif
                     }
                 }
             } else if (track->isStopping_2()) {
@@ -4052,19 +4062,23 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::OffloadThread::prepareTr
     // If a flush is pending and a track is active but the HW is not paused, force a HW pause
     // before flush and then resume HW. This can happen in case of pause/flush/resume
     // if resume is received before pause is executed.
+#ifndef ICS_AUDIO_BLOB
     if (doHwPause || (mFlushPending && !mHwPaused && (count != 0))) {
         mOutput->stream->pause(mOutput->stream);
         if (!doHwPause) {
             doHwResume = true;
         }
     }
+#endif
     if (mFlushPending) {
         flushHw_l();
         mFlushPending = false;
     }
+#ifndef ICS_AUDIO_BLOB
     if (doHwResume) {
         mOutput->stream->resume(mOutput->stream);
     }
+#endif
 
     // remove all the tracks that need to be...
     removeTracks_l(*tracksToRemove);
@@ -4111,6 +4125,7 @@ bool AudioFlinger::OffloadThread::waitingAsyncCallback()
 
 void AudioFlinger::OffloadThread::flushHw_l()
 {
+#ifndef ICS_AUDIO_BLOB
     mOutput->stream->flush(mOutput->stream);
     // Flush anything still waiting in the mixbuffer
     mCurrentWriteLength = 0;
@@ -4125,6 +4140,7 @@ void AudioFlinger::OffloadThread::flushHw_l()
         mCallbackThread->setWriteBlocked(mWriteAckSequence);
         mCallbackThread->setDraining(mDrainSequence);
     }
+#endif
 }
 
 // ----------------------------------------------------------------------------
